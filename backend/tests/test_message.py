@@ -797,3 +797,36 @@ class TestUserMessageCommandAutoAttach:
         with mock_chainlit_context(session=session):
             msg = Message(content="hello", type="assistant_message")
             assert msg.command is None
+
+    def test_from_dict_user_message_does_not_inherit_session_command(self):
+        """Deserialized payloads (client messages, resume) never inherit it.
+
+        Guards against a concurrent command-less typed message (or resumed
+        history) picking up the active audio turn's command.
+        """
+        session = self._session_with_command("search")
+        step_dict = {
+            "id": "00000000-0000-4000-8000-000000000000",
+            "createdAt": "2024-01-01T00:00:00Z",
+            "output": "typed while an audio turn was active",
+            "name": "User",
+            "type": "user_message",
+        }
+        with mock_chainlit_context(session=session):
+            msg = MessageBase.from_dict(step_dict)
+            assert msg.command is None
+
+    def test_from_dict_user_message_keeps_payload_command(self):
+        """A deserialized command stays authoritative over the session command."""
+        session = self._session_with_command("search")
+        step_dict = {
+            "id": "00000000-0000-4000-8000-000000000000",
+            "createdAt": "2024-01-01T00:00:00Z",
+            "output": "typed with a different command",
+            "name": "User",
+            "type": "user_message",
+            "command": "picture",
+        }
+        with mock_chainlit_context(session=session):
+            msg = MessageBase.from_dict(step_dict)
+            assert msg.command == "picture"
