@@ -428,12 +428,16 @@ async def window_message(sid, data):
 
 
 @sio.on("audio_start")  # pyright: ignore [reportOptionalCall]
-async def audio_start(sid):
+async def audio_start(sid, payload=None):
     """Handle audio init."""
     session = WebsocketSession.require(sid)
 
     context = init_ws_context(session)
     config: ChainlitConfig = session.get_config()  # type: ignore
+
+    # Remember the command selected in the UI so it can be auto-attached to the
+    # user message produced from the transcribed audio (see Message.__post_init__).
+    session.current_command = payload.get("command") if payload else None
 
     if config.features.audio and config.features.audio.enabled:
         connected = bool(await config.code.on_audio_start())
@@ -484,6 +488,8 @@ async def audio_end(sid):
             author="Error", content=str(e) or e.__class__.__name__
         ).send()
     finally:
+        # The command only applies to the audio turn that just ended.
+        session.current_command = None
         await context.emitter.task_end()
 
 
