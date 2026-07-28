@@ -58,6 +58,13 @@ class MessageBase(ABC):
         if not getattr(self, "id", None):
             self.id = str(uuid.uuid4())
 
+        # Auto-attach the command selected in the UI to user messages produced
+        # during an audio turn (e.g. transcribed speech). Typed messages already
+        # carry their command in the payload, so this only fills the gap for
+        # messages the app creates itself (e.g. in on_audio_end).
+        if self.type == "user_message" and self.command is None:
+            self.command = context.session.current_command
+
     @classmethod
     def from_dict(self, _dict: StepDict):
         type = _dict.get("type", "assistant_message")
