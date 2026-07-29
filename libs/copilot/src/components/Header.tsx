@@ -1,9 +1,11 @@
+import { cn } from '@/lib/utils';
 import { ChevronsRight, Maximize, Minimize, PanelRight } from 'lucide-react';
 
 import AudioPresence from '@chainlit/app/src/components/AudioPresence';
 import { Logo } from '@chainlit/app/src/components/Logo';
 import ChatProfiles from '@chainlit/app/src/components/header/ChatProfiles';
 import NewChatButton from '@chainlit/app/src/components/header/NewChat';
+import { FontSize } from '@chainlit/app/src/components/icons/FontSize';
 import { Button } from '@chainlit/app/src/components/ui/button';
 import {
   DropdownMenu,
@@ -31,6 +33,8 @@ interface Props {
   displayMode?: DisplayMode;
   setDisplayMode?: (mode: DisplayMode) => void;
   setIsOpen?: (open: boolean) => void;
+  largeText?: boolean;
+  setLargeText?: (largeText: boolean) => void;
 }
 
 const Header = ({
@@ -39,7 +43,9 @@ const Header = ({
   projectConfig,
   displayMode,
   setDisplayMode,
-  setIsOpen
+  setIsOpen,
+  largeText,
+  setLargeText
 }: Props): JSX.Element => {
   const { config } = projectConfig;
   const { audioConnection } = useAudio();
@@ -66,6 +72,24 @@ const Header = ({
           className="text-muted-foreground mt-[1.5px]"
           onConfirm={startNewChat}
         />
+        {setLargeText && (
+          <Button
+            id="copilot-large-text-button"
+            size="icon"
+            variant="ghost"
+            aria-pressed={largeText}
+            aria-label="Toggle larger text"
+            title="Toggle larger text"
+            onClick={() => setLargeText(!largeText)}
+          >
+            <FontSize
+              className={cn(
+                '!size-5',
+                largeText ? 'text-primary' : 'text-muted-foreground'
+              )}
+            />
+          </Button>
+        )}
         {setDisplayMode && (
           <DropdownMenu modal={false}>
             <DropdownMenuTrigger asChild>

@@ -15,7 +15,12 @@ import Header from './components/Header';
 
 import ChatWrapper from './chat';
 import { useSidebarResize } from './hooks';
-import { LS_DISPLAY_MODE_KEY, resolveDisplayMode } from './resolveDisplayMode';
+import {
+  LS_DISPLAY_MODE_KEY,
+  LS_LARGE_TEXT_KEY,
+  resolveDisplayMode,
+  resolveLargeText
+} from './resolveDisplayMode';
 import {
   clearChainlitCopilotThreadId,
   getChainlitCopilotThreadId
@@ -33,6 +38,7 @@ const Widget = ({ config, error }: Props) => {
   const [displayMode, setDisplayMode] = useState<DisplayMode>(() =>
     resolveDisplayMode(config?.displayMode)
   );
+  const [largeText, setLargeText] = useState<boolean>(() => resolveLargeText());
   const projectConfig = useConfig();
   const { sidebarWidth, handleMouseDown } = useSidebarResize({
     displayMode,
@@ -57,6 +63,10 @@ const Widget = ({ config, error }: Props) => {
     localStorage.setItem(LS_DISPLAY_MODE_KEY, displayMode);
   }, [displayMode]);
 
+  useEffect(() => {
+    localStorage.setItem(LS_LARGE_TEXT_KEY, String(largeText));
+  }, [largeText]);
+
   const customClassName = config?.button?.className || '';
 
   const chatContent = error ? (
@@ -70,8 +80,14 @@ const Widget = ({ config, error }: Props) => {
         displayMode={displayMode}
         setDisplayMode={setDisplayMode}
         setIsOpen={setIsOpen}
+        largeText={largeText}
+        setLargeText={setLargeText}
       />
-      <div className="flex flex-grow overflow-y-auto">
+      <div
+        data-testid="copilot-chat-body"
+        className="flex flex-grow overflow-y-auto"
+        style={{ zoom: largeText ? 1.2 : 1 }}
+      >
         <ChatWrapper />
       </div>
     </>
