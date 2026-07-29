@@ -15,6 +15,10 @@
   font-family: var(--font-mono);
 }
 
+#cl-shadow-root [data-radix-popper-content-wrapper] {
+  z-index: 51;
+}
+
 @layer base {
   #shadow-root-container {
     --font-sans: 'Inter', sans-serif;
