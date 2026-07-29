@@ -78,7 +78,7 @@ const CompactSteps = memo(
     const accordionId = 'compact-steps';
 
     return (
-      <div className="step py-2">
+      <div className="step py-2" data-testid="compact-steps">
         <div className="flex flex-grow pb-2">
           <div className="ai-message flex gap-4 w-full">
             <MessageAvatar author={lastStep?.name || 'Assistant'} />
@@ -92,6 +92,7 @@ const CompactSteps = memo(
               >
                 <AccordionItem value={accordionId} className="border-none">
                   <AccordionTrigger
+                    data-testid="compact-steps-trigger"
                     className={cn(
                       'flex items-center gap-1 justify-start transition-none p-0 hover:no-underline mt-[3px]',
                       !showUsing &&
