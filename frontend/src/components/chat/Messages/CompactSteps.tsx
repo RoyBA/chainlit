@@ -93,7 +93,7 @@ const CompactSteps = memo(
                 <AccordionItem value={accordionId} className="border-none">
                   <AccordionTrigger
                     className={cn(
-                      'flex items-center gap-1 justify-start transition-none p-0 hover:no-underline',
+                      'flex items-center gap-1 justify-start transition-none p-0 hover:no-underline mt-[3px]',
                       !showUsing &&
                         'text-muted-foreground hover:text-foreground',
                       showUsing && 'loading-shimmer'

@@ -55,7 +55,7 @@ export default function Step({
       <div className="flex flex-col flex-grow w-0">
         <p
           className={cn(
-            'flex items-center gap-1 font-medium',
+            'flex items-center gap-1 font-medium mt-[3px]',
             isError && 'text-red-500',
             !using && 'text-muted-foreground',
             using && 'loading-shimmer'
@@ -88,7 +88,7 @@ export default function Step({
         <AccordionItem value={step.id} className="border-none">
           <AccordionTrigger
             className={cn(
-              'flex items-center gap-1 justify-start transition-none p-0 hover:no-underline',
+              'flex items-center gap-1 justify-start transition-none p-0 hover:no-underline mt-[3px]',
               isError && 'text-red-500',
               !using && 'text-muted-foreground hover:text-foreground',
               using && 'loading-shimmer'
