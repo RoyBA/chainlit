@@ -15,8 +15,13 @@
   font-family: var(--font-mono);
 }
 
+/*
+ * Radix inlines the content's z-index onto this wrapper; our pickers set none,
+ * so it defaults to `auto` and hides behind the chat (z-50). `!important` beats
+ * the inline value.
+ */
 #cl-shadow-root [data-radix-popper-content-wrapper] {
-  z-index: 100;
+  z-index: 100 !important;
 }
 
 @layer base {
