@@ -302,4 +302,80 @@ describe('Copilot', { includeShadowDom: true }, () => {
       });
     });
   });
+
+  describe('Larger text', () => {
+    beforeEach(() => {
+      cy.window().then((win) => {
+        win.localStorage.removeItem('chainlit-copilot-largeText');
+      });
+    });
+
+    it('should toggle larger text and persist the preference', () => {
+      mountCopilotWidget();
+      openCopilot();
+
+      cy.step('Chat body renders at default zoom');
+      cy.get('[data-testid="copilot-chat-body"]')
+        .should('have.attr', 'style')
+        .and('contain', 'zoom: 1;');
+      cy.get('#copilot-large-text-button').should(
+        'have.attr',
+        'aria-pressed',
+        'false'
+      );
+
+      cy.step('Enable larger text');
+      cy.get('#copilot-large-text-button').click();
+
+      cy.get('#copilot-large-text-button').should(
+        'have.attr',
+        'aria-pressed',
+        'true'
+      );
+      cy.get('[data-testid="copilot-chat-body"]')
+        .should('have.attr', 'style')
+        .and('contain', 'zoom: 1.2;');
+      cy.window().then((win) => {
+        expect(win.localStorage.getItem('chainlit-copilot-largeText')).to.equal(
+          'true'
+        );
+      });
+
+      cy.step('Disable larger text');
+      cy.get('#copilot-large-text-button').click();
+
+      cy.get('#copilot-large-text-button').should(
+        'have.attr',
+        'aria-pressed',
+        'false'
+      );
+      cy.get('[data-testid="copilot-chat-body"]')
+        .should('have.attr', 'style')
+        .and('contain', 'zoom: 1;');
+      cy.window().then((win) => {
+        expect(win.localStorage.getItem('chainlit-copilot-largeText')).to.equal(
+          'false'
+        );
+      });
+    });
+
+    it('should apply the persisted larger-text preference on mount', () => {
+      cy.step('Pre-set the preference in localStorage');
+      cy.window().then((win) => {
+        win.localStorage.setItem('chainlit-copilot-largeText', 'true');
+      });
+
+      mountCopilotWidget();
+      openCopilot();
+
+      cy.get('#copilot-large-text-button').should(
+        'have.attr',
+        'aria-pressed',
+        'true'
+      );
+      cy.get('[data-testid="copilot-chat-body"]')
+        .should('have.attr', 'style')
+        .and('contain', 'zoom: 1.2;');
+    });
+  });
 });
