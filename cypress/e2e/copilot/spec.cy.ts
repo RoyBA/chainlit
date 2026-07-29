@@ -163,30 +163,33 @@ describe('Copilot', { includeShadowDom: true }, () => {
       });
     });
 
-    it('should open as sidebar and push body content', () => {
+    it('should open as sidebar and wrap host content', () => {
       mountCopilotWidget({ displayMode: 'sidebar' });
 
       cy.step('Open sidebar');
       cy.get('#chainlit-copilot-button').click();
 
       cy.get('#chainlit-copilot-chat').should('exist');
-      cy.document().should((doc) => {
-        expect(doc.body.style.marginRight).to.equal('400px');
-      });
+
+      cy.step('Host content is wrapped and constrained to the reduced width');
+      cy.get('#chainlit-copilot-host-wrapper')
+        .should('exist')
+        .should(($wrapper) => {
+          expect($wrapper[0].style.width).to.equal('calc(100vw - 400px)');
+        });
     });
 
-    it('should close sidebar and restore body margin', () => {
+    it('should close sidebar and unwrap host content', () => {
       mountCopilotWidget({ displayMode: 'sidebar', opened: true });
 
       cy.get('#chainlit-copilot-chat').should('exist');
+      cy.get('#chainlit-copilot-host-wrapper').should('exist');
 
       cy.step('Close sidebar via close button');
       cy.get('#close-sidebar-button').click();
 
       cy.get('#chainlit-copilot-chat').should('not.exist');
-      cy.document().should((doc) => {
-        expect(doc.body.style.marginRight).to.not.equal('400px');
-      });
+      cy.get('#chainlit-copilot-host-wrapper').should('not.exist');
     });
 
     it('should resize sidebar via drag handle', () => {
@@ -227,15 +230,21 @@ describe('Copilot', { includeShadowDom: true }, () => {
             .invoke('width')
             .should('be.greaterThan', initialWidth);
 
-          cy.step('Verify body margin matches new width');
+          cy.step('Verify host wrapper width tiles beside the sidebar');
           cy.get('#chainlit-copilot-chat')
             .parents('div.fixed')
             .first()
             .invoke('width')
             .then((newWidth) => {
-              cy.document().should((doc) => {
-                const margin = parseFloat(doc.body.style.marginRight);
-                expect(margin).to.be.closeTo(newWidth, 2);
+              cy.get('#chainlit-copilot-host-wrapper').should(($wrapper) => {
+                const el = $wrapper[0];
+                const win = el.ownerDocument.defaultView;
+                if (!win) throw new Error('missing host window');
+                const wrapperWidth = el.getBoundingClientRect().width;
+                expect(wrapperWidth + Number(newWidth)).to.be.closeTo(
+                  win.innerWidth,
+                  3
+                );
               });
             });
         });
@@ -251,12 +260,10 @@ describe('Copilot', { includeShadowDom: true }, () => {
 
       cy.contains('[role="menuitemradio"]', 'Floating').click();
 
-      cy.document().should((doc) => {
-        expect(doc.body.style.marginRight).to.not.equal('400px');
-      });
+      cy.get('#chainlit-copilot-host-wrapper').should('not.exist');
     });
 
-    it('should restore body margin on widget unmount', () => {
+    it('should unwrap host content and restore body margin on unmount', () => {
       cy.step('Set a custom body margin before mounting');
       cy.document().then((doc) => {
         doc.body.style.marginRight = '20px';
@@ -265,16 +272,20 @@ describe('Copilot', { includeShadowDom: true }, () => {
       mountCopilotWidget({ displayMode: 'sidebar', opened: true });
 
       cy.get('#chainlit-copilot-chat').should('exist');
+      cy.get('#chainlit-copilot-host-wrapper').should('exist');
+
+      cy.step('Body margin is neutralized while the sidebar is open');
       cy.document().should((doc) => {
-        expect(doc.body.style.marginRight).to.equal('400px');
+        expect(doc.body.style.marginRight).to.equal('0px');
       });
 
-      cy.step('Unmount widget and verify margin is restored');
+      cy.step('Unmount widget and verify DOM + margin are restored');
       cy.window().then((win) => {
         // @ts-expect-error is not a valid prop
         win.unmountChainlitWidget();
       });
 
+      cy.get('#chainlit-copilot-host-wrapper').should('not.exist');
       cy.document().should((doc) => {
         expect(doc.body.style.marginRight).to.equal('20px');
       });
@@ -295,10 +306,13 @@ describe('Copilot', { includeShadowDom: true }, () => {
         .invoke('width')
         .should('be.closeTo', 500, 5);
 
-      cy.step('Verify body margin matches persisted width');
-      cy.document().should((doc) => {
-        const margin = parseFloat(doc.body.style.marginRight);
-        expect(margin).to.be.closeTo(500, 2);
+      cy.step('Verify host wrapper width matches persisted width');
+      cy.get('#chainlit-copilot-host-wrapper').should(($wrapper) => {
+        const el = $wrapper[0];
+        const win = el.ownerDocument.defaultView;
+        if (!win) throw new Error('missing host window');
+        const wrapperWidth = el.getBoundingClientRect().width;
+        expect(wrapperWidth).to.be.closeTo(win.innerWidth - 500, 3);
       });
     });
   });
