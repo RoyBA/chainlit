@@ -51,4 +51,25 @@ describe('Compact CoT display', () => {
     cy.get('[data-testid="compact-steps-trigger"]').click();
     cy.get('#step-agent').should('be.visible');
   });
+
+  it('keeps a nested assistant message visible outside the collapsed summary', () => {
+    cy.visit('/');
+    submitMessage('nested_message');
+
+    // The steps collapse into a summary that stays closed.
+    cy.get('[data-testid="compact-steps"]').should('have.length', 1);
+    cy.get('[data-testid="compact-steps-trigger"]').should(
+      'have.attr',
+      'data-state',
+      'closed'
+    );
+
+    // The assistant message produced inside a nested step is lifted to the root:
+    // visible without expanding, and not contained in the compact summary.
+    cy.contains('Nested answer').should('be.visible');
+    cy.get('[data-testid="compact-steps"]').should(
+      'not.contain',
+      'Nested answer'
+    );
+  });
 });
