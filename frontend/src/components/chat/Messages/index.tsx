@@ -53,6 +53,17 @@ const countVisibleSteps = (steps: IStep[], cot: string): number => {
   return count;
 };
 
+// Assistant messages must surface at the root even when emitted from inside a
+// nested step, so collect them recursively for compact mode.
+const collectMessages = (steps: IStep[]): IStep[] => {
+  const out: IStep[] = [];
+  for (const s of steps) {
+    if (s.type.includes('message')) out.push(s);
+    else if (s.steps) out.push(...collectMessages(s.steps));
+  }
+  return out;
+};
+
 const Messages = memo(
   ({ messages, elements, actions, indent, isRunning, scorableRun }: Props) => {
     const messageContext = useContext(MessageContext);
@@ -114,11 +125,9 @@ const Messages = memo(
                         isRunning={isRunning}
                         scorableRun={scorableRun}
                       />
-                      {/* Render message-type children at root level */}
+                      {/* Lift assistant messages (at any depth) to the root */}
                       <Messages
-                        messages={m.steps.filter((s) =>
-                          s.type.includes('message')
-                        )}
+                        messages={collectMessages(m.steps)}
                         elements={elements}
                         actions={actions}
                         indent={indent}

@@ -2,6 +2,7 @@ import { cn } from '@/lib/utils';
 import { MessageContext } from 'contexts/MessageContext';
 import {
   PropsWithChildren,
+  ReactNode,
   useContext,
   useEffect,
   useMemo,
@@ -21,12 +22,14 @@ import { Translator } from 'components/i18n';
 interface Props {
   step: IStep;
   isRunning?: boolean;
+  nestedSteps?: ReactNode;
 }
 
 export default function Step({
   step,
   children,
-  isRunning
+  isRunning,
+  nestedSteps
 }: PropsWithChildren<Props>) {
   const { showStepDetails } = useContext(MessageContext);
 
@@ -34,7 +37,13 @@ export default function Step({
     return isRunning && step.start && !step.end && !step.isError;
   }, [step, isRunning]);
 
-  const hasContent = step.input || step.output || step.steps?.length;
+  // Match what the accordion body renders (nestedSteps = non-message children),
+  // so a step whose only children are messages isn't expandable into empty content.
+  const hasSubSteps =
+    step.steps?.some((s) => !s.type.includes('message')) ?? false;
+  const hasContent = step.input || step.output || hasSubSteps;
+  // With details hidden, only sub-steps are worth expanding (input/output is dropped).
+  const expandable = showStepDetails ? Boolean(hasContent) : hasSubSteps;
   const isError = step.isError;
   const stepName = step.name;
 
@@ -49,8 +58,8 @@ export default function Step({
     }
   }, [using, step.autoCollapse]);
 
-  // If there's no content or step details are disabled, just render the status without accordion
-  if (!hasContent || !showStepDetails) {
+  // Nothing to expand: render a flat status label.
+  if (!expandable) {
     return (
       <div className="flex flex-col flex-grow w-0">
         <p
@@ -107,7 +116,7 @@ export default function Step({
           </AccordionTrigger>
           <AccordionContent>
             <div className="flex-grow mt-4 ml-1 pl-4 border-l-2 border-primary">
-              {children}
+              {showStepDetails ? children : nestedSteps}
             </div>
           </AccordionContent>
         </AccordionItem>

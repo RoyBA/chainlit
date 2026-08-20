@@ -36,15 +36,21 @@ const collectVisible = (steps: IStep[], cot: string): IStep[] => {
   return result;
 };
 
+// Assistant messages are lifted to the root by the parent, so drop them at
+// every depth to avoid trapping them inside the collapsed accordion.
+const stripMessages = (steps: IStep[]): IStep[] =>
+  steps
+    .filter((s) => !s.type.includes('message'))
+    .map((s) => (s.steps ? { ...s, steps: stripMessages(s.steps) } : s));
+
 const CompactSteps = memo(
   ({ steps, elements, actions, indent, isRunning, scorableRun }: Props) => {
     const { cot } = useContext(MessageContext);
     const [openValue, setOpenValue] = useState<string>('');
 
-    // All non-message step children for rendering (Message skip logic drills through intermediates)
-    const stepChildren = useMemo(() => {
-      return steps.filter((s) => !s.type.includes('message'));
-    }, [steps]);
+    // Steps to render inside the accordion, with assistant messages stripped
+    // at every depth (they render at the root instead).
+    const stepChildren = useMemo(() => stripMessages(steps), [steps]);
 
     // Recursively collected visible steps for count and label
     const visibleSteps = useMemo(() => {

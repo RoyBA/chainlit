@@ -51,4 +51,34 @@ describe('Compact CoT display', () => {
     cy.get('[data-testid="compact-steps-trigger"]').click();
     cy.get('#step-agent').should('be.visible');
   });
+
+  it('keeps a nested assistant message visible outside the collapsed summary', () => {
+    cy.visit('/');
+    submitMessage('nested_message');
+
+    // The steps collapse into a summary that stays closed.
+    cy.get('[data-testid="compact-steps"]').should('have.length', 1);
+    cy.get('[data-testid="compact-steps-trigger"]').should(
+      'have.attr',
+      'data-state',
+      'closed'
+    );
+
+    // The assistant message produced inside a nested step is lifted to the root:
+    // visible even though the summary is still collapsed.
+    cy.contains('Nested answer').should('be.visible');
+
+    // Expanding the summary shows only the steps; the message is not duplicated
+    // inside (the accordion content is mounted once open, so this is meaningful).
+    cy.get('[data-testid="compact-steps-trigger"]').click();
+    cy.get('[data-testid="compact-steps-trigger"]').should(
+      'have.attr',
+      'data-state',
+      'open'
+    );
+    cy.get('[data-testid="compact-steps"]').should(
+      'not.contain',
+      'Nested answer'
+    );
+  });
 });

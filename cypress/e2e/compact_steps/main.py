@@ -25,6 +25,14 @@ async def agent():
     return "Result from agent"
 
 
+@cl.step(type="tool", name="answering-agent")
+async def answering_agent():
+    await tool1()
+    await tool2()
+    # Assistant message emitted from inside a nested step.
+    await cl.Message(content="Nested answer").send()
+
+
 @cl.on_message
 async def main(message: cl.Message):
     content = message.content.strip().lower()
@@ -35,6 +43,11 @@ async def main(message: cl.Message):
     elif content == "nested":
         # Only one top-level step, but it nests two tools -> 3 visible steps.
         await agent()
+    elif content == "nested_message":
+        # An assistant message produced inside a nested step must still render
+        # at the root, not be trapped inside the collapsed compact summary.
+        await answering_agent()
+        return
     else:
         # Three sequential tools -> collapsed into one compact summary.
         await tool1()
