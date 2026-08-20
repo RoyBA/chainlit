@@ -435,13 +435,15 @@ async def audio_start(sid, payload=None):
     context = init_ws_context(session)
     config: ChainlitConfig = session.get_config()  # type: ignore
 
-    # Remember the command selected in the UI so it can be auto-attached to the
-    # user message produced from the transcribed audio (see Message.__post_init__).
-    session.current_command = payload.get("command") if payload else None
+    # Only keep the UI-selected command when audio is accepted (consumed in
+    # Message.__post_init__), so a declined/disabled start leaves nothing stale.
+    session.current_command = None
 
     if config.features.audio and config.features.audio.enabled:
         connected = bool(await config.code.on_audio_start())
         connection_state = "on" if connected else "off"
+        if connected:
+            session.current_command = payload.get("command") if payload else None
         await context.emitter.update_audio_connection(connection_state)
 
 
