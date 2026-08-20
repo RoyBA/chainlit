@@ -37,7 +37,10 @@ export default function Step({
     return isRunning && step.start && !step.end && !step.isError;
   }, [step, isRunning]);
 
-  const hasSubSteps = !!step.steps?.length;
+  // Match what the accordion body renders (nestedSteps = non-message children),
+  // so a step whose only children are messages isn't expandable into empty content.
+  const hasSubSteps =
+    step.steps?.some((s) => !s.type.includes('message')) ?? false;
   const hasContent = step.input || step.output || hasSubSteps;
   // With details hidden, only sub-steps are worth expanding (input/output is dropped).
   const expandable = showStepDetails ? Boolean(hasContent) : hasSubSteps;

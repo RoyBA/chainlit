@@ -65,8 +65,17 @@ describe('Compact CoT display', () => {
     );
 
     // The assistant message produced inside a nested step is lifted to the root:
-    // visible without expanding, and not contained in the compact summary.
+    // visible even though the summary is still collapsed.
     cy.contains('Nested answer').should('be.visible');
+
+    // Expanding the summary shows only the steps; the message is not duplicated
+    // inside (the accordion content is mounted once open, so this is meaningful).
+    cy.get('[data-testid="compact-steps-trigger"]').click();
+    cy.get('[data-testid="compact-steps-trigger"]').should(
+      'have.attr',
+      'data-state',
+      'open'
+    );
     cy.get('[data-testid="compact-steps"]').should(
       'not.contain',
       'Nested answer'
