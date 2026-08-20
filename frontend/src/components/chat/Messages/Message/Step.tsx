@@ -37,13 +37,13 @@ export default function Step({
     return isRunning && step.start && !step.end && !step.isError;
   }, [step, isRunning]);
 
-  // Match what the accordion body renders (nestedSteps = non-message children),
-  // so a step whose only children are messages isn't expandable into empty content.
-  const hasSubSteps =
-    step.steps?.some((s) => !s.type.includes('message')) ?? false;
+  const hasSubSteps = !!step.steps?.length;
   const hasContent = step.input || step.output || hasSubSteps;
-  // With details hidden, only sub-steps are worth expanding (input/output is dropped).
-  const expandable = showStepDetails ? Boolean(hasContent) : hasSubSteps;
+  // Flat mode's accordion body renders only non-message sub-steps, so a step whose
+  // children are all messages isn't expandable there (it would open to nothing).
+  const hasVisibleSubSteps =
+    step.steps?.some((s) => !s.type.includes('message')) ?? false;
+  const expandable = showStepDetails ? Boolean(hasContent) : hasVisibleSubSteps;
   const isError = step.isError;
   const stepName = step.name;
 
