@@ -138,10 +138,6 @@ export function useSidebarResize({
     const body = document.body;
     const { scrollX, scrollY } = window;
 
-    // Snapshot the original body child order — the widget container isn't always the
-    // last child, so we restore this exact order on close.
-    const originalOrder = Array.from(body.childNodes);
-
     // Preserve the host's inline body margins so we can restore them on close.
     const previousMargin = {
       top: body.style.marginTop,
@@ -179,10 +175,6 @@ export function useSidebarResize({
       const restoreScrollY = wrapper.scrollTop;
 
       removeHostWrapper();
-      // removeHostWrapper drops nodes that followed the widget in front of it; replay
-      // the original order so host sibling order is preserved.
-      originalOrder.forEach((node) => body.appendChild(node));
-
       body.style.marginTop = previousMargin.top;
       body.style.marginRight = previousMargin.right;
       body.style.marginBottom = previousMargin.bottom;
