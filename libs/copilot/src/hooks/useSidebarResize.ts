@@ -26,7 +26,6 @@ export function useSidebarResize({
     return stored ? Number(stored) : SIDEBAR_DEFAULT_WIDTH;
   });
   const isDragging = useRef(false);
-  const originalMarginRef = useRef('');
 
   useEffect(() => {
     if (displayMode === 'sidebar') {
@@ -74,13 +73,28 @@ export function useSidebarResize({
     };
   }, [stopDragging, displayMode, isOpen]);
 
+  // A host containing block on <body> (transform / perspective / will-change) re-anchors
+  // the fixed sidebar to the body and breaks its positioning, so suspend those while the
+  // sidebar is open and reserve space with a right margin. All restored on close.
   useEffect(() => {
     if (displayMode === 'sidebar' && isOpen) {
-      originalMarginRef.current = document.body.style.marginRight;
-      document.body.style.transition = 'margin-right 0.3s ease-in-out';
+      const body = document.body;
+      const previous = {
+        marginRight: body.style.marginRight,
+        transform: body.style.transform,
+        perspective: body.style.perspective,
+        willChange: body.style.willChange
+      };
+      body.style.transform = 'none';
+      body.style.perspective = 'none';
+      body.style.willChange = 'auto';
+      body.style.transition = 'margin-right 0.3s ease-in-out';
       return () => {
-        document.body.style.marginRight = originalMarginRef.current;
-        document.body.style.transition = '';
+        body.style.marginRight = previous.marginRight;
+        body.style.transform = previous.transform;
+        body.style.perspective = previous.perspective;
+        body.style.willChange = previous.willChange;
+        body.style.transition = '';
       };
     }
   }, [displayMode, isOpen]);

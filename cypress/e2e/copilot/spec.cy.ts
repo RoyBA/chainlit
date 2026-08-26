@@ -189,6 +189,30 @@ describe('Copilot', { includeShadowDom: true }, () => {
       });
     });
 
+    it('should neutralize a host body transform while open and restore it', () => {
+      cy.step('Give the host a transform on <body>');
+      cy.document().then((doc) => {
+        doc.body.style.transform = 'translateZ(0)';
+      });
+
+      mountCopilotWidget({ displayMode: 'sidebar', opened: true });
+
+      cy.get('#chainlit-copilot-chat').should('exist');
+      cy.step(
+        'Body transform is neutralized so the sidebar stays viewport-fixed'
+      );
+      cy.document().should((doc) => {
+        expect(doc.body.style.transform).to.equal('none');
+      });
+
+      cy.step('Close and verify the host transform is restored');
+      cy.get('#close-sidebar-button').click();
+      cy.get('#chainlit-copilot-chat').should('not.exist');
+      cy.document().should((doc) => {
+        expect(doc.body.style.transform).to.equal('translateZ(0)');
+      });
+    });
+
     it('should resize sidebar via drag handle', () => {
       mountCopilotWidget({ displayMode: 'sidebar', opened: true });
 
