@@ -180,6 +180,11 @@ describe('Copilot', { includeShadowDom: true }, () => {
     });
 
     it('should close sidebar and unwrap host content', () => {
+      cy.step('Set a custom body margin before mounting');
+      cy.document().then((doc) => {
+        doc.body.style.marginRight = '20px';
+      });
+
       mountCopilotWidget({ displayMode: 'sidebar', opened: true });
 
       cy.get('#chainlit-copilot-chat').should('exist');
@@ -190,6 +195,11 @@ describe('Copilot', { includeShadowDom: true }, () => {
 
       cy.get('#chainlit-copilot-chat').should('not.exist');
       cy.get('#chainlit-copilot-host-wrapper').should('not.exist');
+
+      cy.step('Pre-open body margin is restored after closing');
+      cy.document().should((doc) => {
+        expect(doc.body.style.marginRight).to.equal('20px');
+      });
     });
 
     it('should resize sidebar via drag handle', () => {
