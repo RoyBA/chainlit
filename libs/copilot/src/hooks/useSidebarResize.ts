@@ -30,6 +30,29 @@ function getHostWrapper(): HTMLElement | null {
   return document.getElementById(HOST_WRAPPER_ID);
 }
 
+// Host pages often arrange content at the <body> level (e.g. body { display: flex }
+// or grid centering). Moving that content into the wrapper would drop those rules,
+// so we mirror the body's layout-affecting properties onto the wrapper.
+const HOST_LAYOUT_PROPS = [
+  'display',
+  'flex-direction',
+  'flex-wrap',
+  'justify-content',
+  'align-items',
+  'align-content',
+  'justify-items',
+  'grid-template-columns',
+  'grid-template-rows',
+  'grid-template-areas',
+  'grid-auto-flow',
+  'grid-auto-columns',
+  'grid-auto-rows',
+  'row-gap',
+  'column-gap',
+  'padding',
+  'text-align'
+];
+
 // Move every host <body> child (except the copilot widget container) into a single
 // wrapper element we control. Sizing this wrapper — instead of nudging the host via
 // document.body's margin — shrinks the host area reliably, even when the host renders
@@ -39,6 +62,11 @@ function createHostWrapper(): HTMLElement {
   const body = document.body;
   const wrapper = document.createElement('div');
   wrapper.id = HOST_WRAPPER_ID;
+
+  const bodyStyle = getComputedStyle(body);
+  HOST_LAYOUT_PROPS.forEach((prop) => {
+    wrapper.style.setProperty(prop, bodyStyle.getPropertyValue(prop));
+  });
 
   Array.from(body.childNodes).forEach((node) => {
     if (
