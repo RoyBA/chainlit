@@ -143,19 +143,23 @@ export function useSidebarResize({
     if (host) host.style.overflowX = 'clip';
     // Reserve first (instant), then enable the transition so only later drags animate.
     reserveSpace(sidebarWidth);
+    // Commit the host width before enabling its transition, else Chromium tries to animate
+    // width from `auto`, sticks at the pre-open value, and the host never shrinks. A body
+    // margin animates from 0 fine, so it needs no flush.
+    if (host) void host.offsetWidth;
     setReserveTransition(true);
 
     return () => {
       body.style.transform = prevBody.transform;
       body.style.perspective = prevBody.perspective;
       body.style.willChange = prevBody.willChange;
-      // Re-query so we reset the node mounted now, not a stale one.
-      const current = getHostRoot();
-      if (prevHost && current) {
-        current.style.width = prevHost.width;
-        current.style.overflowX = prevHost.overflowX;
-        current.style.transition = prevHost.transition;
-      } else if (!prevHost) {
+      if (host && prevHost) {
+        // Restore the exact node we styled (harmless if it was since detached/swapped).
+        host.style.width = prevHost.width;
+        host.style.overflowX = prevHost.overflowX;
+        host.style.transition = prevHost.transition;
+      } else {
+        // We took the body-margin fallback; undo it.
         body.style.marginRight = prevBody.marginRight;
         body.style.transition = prevBody.transition;
       }
