@@ -7,6 +7,14 @@ expect.extend(matchers);
 // Mock URL.createObjectURL
 global.URL.createObjectURL = vi.fn();
 
+// Radix popovers/commands rely on these DOM APIs that jsdom doesn't implement.
+global.ResizeObserver = class ResizeObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};
+window.HTMLElement.prototype.scrollIntoView = vi.fn();
+
 // Polyfill DOMMatrix for pdfjs-dist which requires it at import time in JSDOM
 if (typeof globalThis.DOMMatrix === 'undefined') {
   globalThis.DOMMatrix = class DOMMatrix {

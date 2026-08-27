@@ -3,19 +3,14 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { ModePicker } from '@/components/chat/MessageComposer/ModePicker';
 
+import { cleanupShadowHosts, mountShadowHost } from './testUtils';
+
 vi.mock('@chainlit/react-client', async () => {
   const React = await import('react');
   return {
     ChainlitContext: React.createContext(undefined)
   };
 });
-
-global.ResizeObserver = class ResizeObserver {
-  observe() {}
-  unobserve() {}
-  disconnect() {}
-};
-window.HTMLElement.prototype.scrollIntoView = vi.fn();
 
 const mode = {
   id: 'model',
@@ -26,34 +21,39 @@ const mode = {
   ]
 };
 
+const POPOVER_ID = '#mode-picker-popover-model';
+
 const renderComponent = () =>
   render(<ModePicker mode={mode as any} onOptionSelect={vi.fn()} />);
 
 describe('ModePicker — shadow DOM popover positioning', () => {
-  afterEach(() => {
-    window.cl_shadowRootElement = undefined;
-  });
+  afterEach(cleanupShadowHosts);
 
-  it('portals the popover into window.cl_shadowRootElement', () => {
-    const shadowContainer = document.createElement('div');
-    document.body.appendChild(shadowContainer);
-    window.cl_shadowRootElement = shadowContainer as HTMLDivElement;
+  it('portals the popover into the widget shadow root', () => {
+    const shadowRoot = mountShadowHost();
 
     renderComponent();
     fireEvent.click(screen.getByRole('button'));
 
-    expect(
-      shadowContainer.querySelector('#mode-picker-popover-model')
-    ).not.toBeNull();
-    shadowContainer.remove();
+    // Content lives inside the encapsulated shadow tree, not the light DOM.
+    expect(shadowRoot.querySelector(POPOVER_ID)).not.toBeNull();
+    expect(document.body.querySelector(POPOVER_ID)).toBeNull();
+  });
+
+  it('falls back to document.body when no shadow root is set (standalone app)', () => {
+    renderComponent();
+    fireEvent.click(screen.getByRole('button'));
+
+    expect(document.querySelector(POPOVER_ID)).not.toBeNull();
   });
 
   it('gives the popover content a stacking z-index above the chat', () => {
     renderComponent();
     fireEvent.click(screen.getByRole('button'));
 
-    const content = document.getElementById('mode-picker-popover-model');
-    expect(content).not.toBeNull();
+    // jsdom has no layout engine, so we assert the stacking class Radix copies
+    // onto the popper wrapper rather than computed geometry (covered by e2e).
+    const content = document.querySelector(POPOVER_ID);
     expect(content?.classList.contains('z-[51]')).toBe(true);
   });
 });

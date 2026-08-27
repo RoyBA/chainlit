@@ -6,6 +6,8 @@ import { commandsState } from '@chainlit/react-client';
 
 import { CommandPopoverButton } from '@/components/chat/MessageComposer/CommandPopoverButton';
 
+import { cleanupShadowHosts, mountShadowHost } from './testUtils';
+
 vi.mock('components/i18n/Translator', () => ({
   useTranslation: () => ({ t: (key: string) => key })
 }));
@@ -17,16 +19,11 @@ vi.mock('@chainlit/react-client', async () => {
   };
 });
 
-global.ResizeObserver = class ResizeObserver {
-  observe() {}
-  unobserve() {}
-  disconnect() {}
-};
-window.HTMLElement.prototype.scrollIntoView = vi.fn();
-
 const commands = [
   { id: 'Search', description: 'Search the web', icon: 'search', button: false }
 ];
+
+const POPOVER_ID = '#command-popover';
 
 const renderComponent = () =>
   render(
@@ -38,28 +35,33 @@ const renderComponent = () =>
   );
 
 describe('CommandPopoverButton — shadow DOM popover positioning', () => {
-  afterEach(() => {
-    window.cl_shadowRootElement = undefined;
-  });
+  afterEach(cleanupShadowHosts);
 
-  it('portals the popover into window.cl_shadowRootElement', () => {
-    const shadowContainer = document.createElement('div');
-    document.body.appendChild(shadowContainer);
-    window.cl_shadowRootElement = shadowContainer as HTMLDivElement;
+  it('portals the popover into the widget shadow root', () => {
+    const shadowRoot = mountShadowHost();
 
     renderComponent();
     fireEvent.click(screen.getByRole('button'));
 
-    expect(shadowContainer.querySelector('#command-popover')).not.toBeNull();
-    shadowContainer.remove();
+    // Content lives inside the encapsulated shadow tree, not the light DOM.
+    expect(shadowRoot.querySelector(POPOVER_ID)).not.toBeNull();
+    expect(document.body.querySelector(POPOVER_ID)).toBeNull();
+  });
+
+  it('falls back to document.body when no shadow root is set (standalone app)', () => {
+    renderComponent();
+    fireEvent.click(screen.getByRole('button'));
+
+    expect(document.querySelector(POPOVER_ID)).not.toBeNull();
   });
 
   it('gives the popover content a stacking z-index above the chat', () => {
     renderComponent();
     fireEvent.click(screen.getByRole('button'));
 
-    const content = document.getElementById('command-popover');
-    expect(content).not.toBeNull();
+    // jsdom has no layout engine, so we assert the stacking class Radix copies
+    // onto the popper wrapper rather than computed geometry (covered by e2e).
+    const content = document.querySelector(POPOVER_ID);
     expect(content?.classList.contains('z-[51]')).toBe(true);
   });
 });

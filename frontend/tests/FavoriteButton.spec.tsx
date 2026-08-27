@@ -10,6 +10,8 @@ import {
 
 import { FavoriteButton } from '@/components/chat/MessageComposer/FavoriteButton';
 
+import { cleanupShadowHosts, mountShadowHost } from './testUtils';
+
 const toggleMessageFavoriteMock = vi.fn();
 
 vi.mock('@/components/i18n/Translator', () => ({
@@ -41,14 +43,6 @@ vi.mock('@chainlit/react-client', async () => {
     })
   };
 });
-
-global.ResizeObserver = class ResizeObserver {
-  observe() {}
-  unobserve() {}
-  disconnect() {}
-};
-
-window.HTMLElement.prototype.scrollIntoView = vi.fn();
 
 describe('FavoriteButton', () => {
   const mockOnSelect = vi.fn();
@@ -331,28 +325,33 @@ describe('FavoriteButton — shadow DOM popover positioning', () => {
     });
   });
 
-  afterEach(() => {
-    window.cl_shadowRootElement = undefined;
-  });
+  afterEach(cleanupShadowHosts);
 
-  it('portals the popover into window.cl_shadowRootElement', () => {
-    const shadowContainer = document.createElement('div');
-    document.body.appendChild(shadowContainer);
-    window.cl_shadowRootElement = shadowContainer as HTMLDivElement;
+  it('portals the popover into the widget shadow root', () => {
+    const shadowRoot = mountShadowHost();
 
     renderComponent();
     fireEvent.click(screen.getByRole('button'));
 
-    expect(shadowContainer).toHaveTextContent('Favorites List');
-    shadowContainer.remove();
+    // Content lives inside the encapsulated shadow tree, not the light DOM.
+    expect(shadowRoot.textContent).toContain('Favorites List');
+    expect(document.body.textContent).not.toContain('Favorites List');
+  });
+
+  it('falls back to document.body when no shadow root is set (standalone app)', () => {
+    renderComponent();
+    fireEvent.click(screen.getByRole('button'));
+
+    expect(screen.getByText('Favorites List')).toBeInTheDocument();
   });
 
   it('gives the popover content a stacking z-index above the chat', () => {
     renderComponent();
     fireEvent.click(screen.getByRole('button'));
 
+    // jsdom has no layout engine, so we assert the stacking class Radix copies
+    // onto the popper wrapper rather than computed geometry (covered by e2e).
     const content = document.querySelector('.z-\\[51\\]');
-    expect(content).not.toBeNull();
     expect(content).toHaveTextContent('Favorites List');
   });
 });
