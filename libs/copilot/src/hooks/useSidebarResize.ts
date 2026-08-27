@@ -36,18 +36,40 @@ export function useSidebarResize({
     [hostRoot]
   );
 
+  // Original inline styles of every host node we've constrained this session. The SPA can
+  // swap the host mid-session, so we key by node and restore them all on close.
+  const styledHosts = useRef(
+    new Map<
+      HTMLElement,
+      { width: string; overflowX: string; transition: string }
+    >()
+  );
+
+  // Snapshot a host's original inline styles the first time we touch it, so close can
+  // restore it even after a swap.
+  const rememberHost = useCallback((host: HTMLElement) => {
+    if (!styledHosts.current.has(host)) {
+      styledHosts.current.set(host, {
+        width: host.style.width,
+        overflowX: host.style.overflowX,
+        transition: host.style.transition
+      });
+    }
+  }, []);
+
   // Reserve space beside the sidebar: constrain the host root's width, or (default) push
   // the body with a right margin.
   const reserveSpace = useCallback(
     (width: number) => {
       const host = getHostRoot();
       if (host) {
+        rememberHost(host);
         host.style.width = `calc(100vw - ${width}px)`;
       } else {
         document.body.style.marginRight = `${width}px`;
       }
     },
-    [getHostRoot]
+    [getHostRoot, rememberHost]
   );
 
   // Toggle the reservation transition on whichever element we actually resize, so drags
@@ -56,6 +78,7 @@ export function useSidebarResize({
     (enabled: boolean) => {
       const host = getHostRoot();
       if (host) {
+        rememberHost(host);
         host.style.transition = enabled ? 'width 0.3s ease-in-out' : '';
       } else {
         document.body.style.transition = enabled
@@ -63,7 +86,7 @@ export function useSidebarResize({
           : '';
       }
     },
-    [getHostRoot]
+    [getHostRoot, rememberHost]
   );
 
   useEffect(() => {
@@ -134,13 +157,11 @@ export function useSidebarResize({
     body.style.perspective = 'none';
     body.style.willChange = 'auto';
 
-    const prevHost = host && {
-      width: host.style.width,
-      overflowX: host.style.overflowX,
-      transition: host.style.transition
-    };
-    // `clip` shrinks non-reflowing content without turning the host into a scroll container.
-    if (host) host.style.overflowX = 'clip';
+    if (host) {
+      rememberHost(host);
+      // `clip` shrinks non-reflowing content without turning the host into a scroll container.
+      host.style.overflowX = 'clip';
+    }
     // Reserve first (instant), then enable the transition so only later drags animate.
     reserveSpace(sidebarWidth);
     // Commit the host width before enabling its transition, else Chromium tries to animate
@@ -149,22 +170,29 @@ export function useSidebarResize({
     if (host) void host.offsetWidth;
     setReserveTransition(true);
 
+    const hosts = styledHosts.current;
     return () => {
       body.style.transform = prevBody.transform;
       body.style.perspective = prevBody.perspective;
       body.style.willChange = prevBody.willChange;
-      if (host && prevHost) {
-        // Restore the exact node we styled (harmless if it was since detached/swapped).
-        host.style.width = prevHost.width;
-        host.style.overflowX = prevHost.overflowX;
-        host.style.transition = prevHost.transition;
-      } else {
-        // We took the body-margin fallback; undo it.
-        body.style.marginRight = prevBody.marginRight;
-        body.style.transition = prevBody.transition;
-      }
+      body.style.marginRight = prevBody.marginRight;
+      body.style.transition = prevBody.transition;
+      // Restore every host node we constrained — the SPA may have swapped it mid-session.
+      hosts.forEach((prev, node) => {
+        node.style.width = prev.width;
+        node.style.overflowX = prev.overflowX;
+        node.style.transition = prev.transition;
+      });
+      hosts.clear();
     };
-  }, [displayMode, isOpen, getHostRoot, reserveSpace, setReserveTransition]);
+  }, [
+    displayMode,
+    isOpen,
+    getHostRoot,
+    reserveSpace,
+    setReserveTransition,
+    rememberHost
+  ]);
 
   useEffect(() => {
     if (displayMode !== 'sidebar' || !isOpen) return;
