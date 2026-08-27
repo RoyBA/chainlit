@@ -304,3 +304,55 @@ describe('FavoriteButton', () => {
     expect(screen.getByText('Favorites List')).toBeInTheDocument();
   });
 });
+
+describe('FavoriteButton — shadow DOM popover positioning', () => {
+  const favorites: IStep[] = [
+    {
+      id: 'msg_1',
+      output: 'How do I center a div?',
+      createdAt: new Date('2023-10-01').getTime(),
+      type: 'assistant_message',
+      name: 'Assistant'
+    }
+  ];
+
+  const renderComponent = () =>
+    render(
+      <RecoilRoot
+        initializeState={({ set }) => set(favoriteMessagesState, favorites)}
+      >
+        <FavoriteButton onSelect={vi.fn()} />
+      </RecoilRoot>
+    );
+
+  beforeEach(() => {
+    (useConfig as any).mockReturnValue({
+      config: { features: { favorites: true } }
+    });
+  });
+
+  afterEach(() => {
+    window.cl_shadowRootElement = undefined;
+  });
+
+  it('portals the popover into window.cl_shadowRootElement', () => {
+    const shadowContainer = document.createElement('div');
+    document.body.appendChild(shadowContainer);
+    window.cl_shadowRootElement = shadowContainer as HTMLDivElement;
+
+    renderComponent();
+    fireEvent.click(screen.getByRole('button'));
+
+    expect(shadowContainer).toHaveTextContent('Favorites List');
+    shadowContainer.remove();
+  });
+
+  it('gives the popover content a stacking z-index above the chat', () => {
+    renderComponent();
+    fireEvent.click(screen.getByRole('button'));
+
+    const content = document.querySelector('.z-\\[51\\]');
+    expect(content).not.toBeNull();
+    expect(content).toHaveTextContent('Favorites List');
+  });
+});
