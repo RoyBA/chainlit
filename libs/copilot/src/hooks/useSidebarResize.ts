@@ -10,6 +10,7 @@ const LS_WIDTH_KEY = 'chainlit-copilot-sidebarWidth';
 interface UseSidebarResizeOptions {
   displayMode: DisplayMode;
   isOpen: boolean;
+  hostRoot?: string;
 }
 
 interface UseSidebarResizeReturn {
@@ -19,7 +20,8 @@ interface UseSidebarResizeReturn {
 
 export function useSidebarResize({
   displayMode,
-  isOpen
+  isOpen,
+  hostRoot
 }: UseSidebarResizeOptions): UseSidebarResizeReturn {
   const [sidebarWidth, setSidebarWidth] = useState(() => {
     const stored = localStorage.getItem(LS_WIDTH_KEY);
@@ -73,37 +75,70 @@ export function useSidebarResize({
     };
   }, [stopDragging, displayMode, isOpen]);
 
-  // A host containing block on <body> (transform / perspective / will-change) re-anchors
-  // the fixed sidebar to the body and breaks its positioning, so suspend those while the
-  // sidebar is open and reserve space with a right margin. All restored on close.
+  // Suspend any containing block the host set on <body> (transform / perspective /
+  // will-change) so the fixed sidebar stays anchored to the viewport, then reserve space
+  // for it. A viewport-filling host (100vw / absolute inset) can't be shrunk by a body
+  // margin, so when `hostRoot` is given we constrain that element's width instead.
+  // Everything is restored on close.
   useEffect(() => {
-    if (displayMode === 'sidebar' && isOpen) {
-      const body = document.body;
-      const previous = {
-        marginRight: body.style.marginRight,
-        transform: body.style.transform,
-        perspective: body.style.perspective,
-        willChange: body.style.willChange
-      };
-      body.style.transform = 'none';
-      body.style.perspective = 'none';
-      body.style.willChange = 'auto';
+    if (displayMode !== 'sidebar' || !isOpen) return;
+
+    const body = document.body;
+    const host = hostRoot
+      ? document.querySelector<HTMLElement>(hostRoot)
+      : null;
+
+    const prevBody = {
+      transform: body.style.transform,
+      perspective: body.style.perspective,
+      willChange: body.style.willChange,
+      marginRight: body.style.marginRight,
+      transition: body.style.transition
+    };
+    body.style.transform = 'none';
+    body.style.perspective = 'none';
+    body.style.willChange = 'auto';
+
+    const prevHost = host && {
+      width: host.style.width,
+      overflowX: host.style.overflowX,
+      transition: host.style.transition
+    };
+    if (host) {
+      host.style.width = `calc(100vw - ${sidebarWidth}px)`;
+      host.style.overflowX = 'hidden';
+      host.style.transition = 'width 0.3s ease-in-out';
+    } else {
+      body.style.marginRight = `${sidebarWidth}px`;
       body.style.transition = 'margin-right 0.3s ease-in-out';
-      return () => {
-        body.style.marginRight = previous.marginRight;
-        body.style.transform = previous.transform;
-        body.style.perspective = previous.perspective;
-        body.style.willChange = previous.willChange;
-        body.style.transition = '';
-      };
     }
-  }, [displayMode, isOpen]);
+
+    return () => {
+      body.style.transform = prevBody.transform;
+      body.style.perspective = prevBody.perspective;
+      body.style.willChange = prevBody.willChange;
+      if (host && prevHost) {
+        host.style.width = prevHost.width;
+        host.style.overflowX = prevHost.overflowX;
+        host.style.transition = prevHost.transition;
+      } else {
+        body.style.marginRight = prevBody.marginRight;
+        body.style.transition = prevBody.transition;
+      }
+    };
+  }, [displayMode, isOpen, hostRoot]);
 
   useEffect(() => {
-    if (displayMode === 'sidebar' && isOpen) {
+    if (displayMode !== 'sidebar' || !isOpen) return;
+    const host = hostRoot
+      ? document.querySelector<HTMLElement>(hostRoot)
+      : null;
+    if (host) {
+      host.style.width = `calc(100vw - ${sidebarWidth}px)`;
+    } else {
       document.body.style.marginRight = `${sidebarWidth}px`;
     }
-  }, [sidebarWidth, displayMode, isOpen]);
+  }, [sidebarWidth, displayMode, isOpen, hostRoot]);
 
   return { sidebarWidth, handleMouseDown };
 }

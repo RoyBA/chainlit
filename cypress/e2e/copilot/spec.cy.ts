@@ -213,6 +213,32 @@ describe('Copilot', { includeShadowDom: true }, () => {
       });
     });
 
+    it('should constrain a configured hostRoot instead of the body margin', () => {
+      cy.step('Add a host root element the widget should constrain');
+      cy.document().then((doc) => {
+        const el = doc.createElement('div');
+        el.id = 'test-host-root';
+        doc.body.appendChild(el);
+      });
+
+      mountCopilotWidget({
+        displayMode: 'sidebar',
+        opened: true,
+        hostRoot: '#test-host-root'
+      });
+
+      cy.get('#chainlit-copilot-chat').should('exist');
+      cy.step(
+        'hostRoot width is constrained and the body margin is left alone'
+      );
+      cy.get('#test-host-root').should(($el) => {
+        expect($el[0].style.width).to.equal('calc(100vw - 400px)');
+      });
+      cy.document().should((doc) => {
+        expect(doc.body.style.marginRight).to.not.equal('400px');
+      });
+    });
+
     it('should resize sidebar via drag handle', () => {
       mountCopilotWidget({ displayMode: 'sidebar', opened: true });
 
