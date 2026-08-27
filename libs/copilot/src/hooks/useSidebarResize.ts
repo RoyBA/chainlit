@@ -29,6 +29,43 @@ export function useSidebarResize({
   });
   const isDragging = useRef(false);
 
+  // Resolve the host root fresh on each use so a host that swaps the node (SPA re-render)
+  // is always handled — never a cached, detached node.
+  const getHostRoot = useCallback(
+    () => (hostRoot ? document.querySelector<HTMLElement>(hostRoot) : null),
+    [hostRoot]
+  );
+
+  // Reserve space beside the sidebar: constrain the host root's width, or (default) push
+  // the body with a right margin.
+  const reserveSpace = useCallback(
+    (width: number) => {
+      const host = getHostRoot();
+      if (host) {
+        host.style.width = `calc(100vw - ${width}px)`;
+      } else {
+        document.body.style.marginRight = `${width}px`;
+      }
+    },
+    [getHostRoot]
+  );
+
+  // Toggle the reservation transition on whichever element we actually resize, so drags
+  // follow the pointer instantly instead of animating each step.
+  const setReserveTransition = useCallback(
+    (enabled: boolean) => {
+      const host = getHostRoot();
+      if (host) {
+        host.style.transition = enabled ? 'width 0.3s ease-in-out' : '';
+      } else {
+        document.body.style.transition = enabled
+          ? 'margin-right 0.3s ease-in-out'
+          : '';
+      }
+    },
+    [getHostRoot]
+  );
+
   useEffect(() => {
     if (displayMode === 'sidebar') {
       localStorage.setItem(LS_WIDTH_KEY, String(sidebarWidth));
@@ -39,14 +76,14 @@ export function useSidebarResize({
     if (!isDragging.current) return;
     isDragging.current = false;
     document.body.style.userSelect = '';
-    document.body.style.transition = 'margin-right 0.3s ease-in-out';
-  }, []);
+    setReserveTransition(true);
+  }, [setReserveTransition]);
 
   const handleMouseDown = useCallback(() => {
     isDragging.current = true;
     document.body.style.userSelect = 'none';
-    document.body.style.transition = '';
-  }, []);
+    setReserveTransition(false);
+  }, [setReserveTransition]);
 
   useEffect(() => {
     if (displayMode !== 'sidebar' || !isOpen) return;
@@ -84,9 +121,7 @@ export function useSidebarResize({
     if (displayMode !== 'sidebar' || !isOpen) return;
 
     const body = document.body;
-    const host = hostRoot
-      ? document.querySelector<HTMLElement>(hostRoot)
-      : null;
+    const host = getHostRoot();
 
     const prevBody = {
       transform: body.style.transform,
@@ -104,41 +139,33 @@ export function useSidebarResize({
       overflowX: host.style.overflowX,
       transition: host.style.transition
     };
-    if (host) {
-      host.style.width = `calc(100vw - ${sidebarWidth}px)`;
-      host.style.overflowX = 'hidden';
-      host.style.transition = 'width 0.3s ease-in-out';
-    } else {
-      body.style.marginRight = `${sidebarWidth}px`;
-      body.style.transition = 'margin-right 0.3s ease-in-out';
-    }
+    // `clip` shrinks non-reflowing content without turning the host into a scroll container.
+    if (host) host.style.overflowX = 'clip';
+    // Reserve first (instant), then enable the transition so only later drags animate.
+    reserveSpace(sidebarWidth);
+    setReserveTransition(true);
 
     return () => {
       body.style.transform = prevBody.transform;
       body.style.perspective = prevBody.perspective;
       body.style.willChange = prevBody.willChange;
-      if (host && prevHost) {
-        host.style.width = prevHost.width;
-        host.style.overflowX = prevHost.overflowX;
-        host.style.transition = prevHost.transition;
-      } else {
+      // Re-query so we reset the node mounted now, not a stale one.
+      const current = getHostRoot();
+      if (prevHost && current) {
+        current.style.width = prevHost.width;
+        current.style.overflowX = prevHost.overflowX;
+        current.style.transition = prevHost.transition;
+      } else if (!prevHost) {
         body.style.marginRight = prevBody.marginRight;
         body.style.transition = prevBody.transition;
       }
     };
-  }, [displayMode, isOpen, hostRoot]);
+  }, [displayMode, isOpen, getHostRoot, reserveSpace, setReserveTransition]);
 
   useEffect(() => {
     if (displayMode !== 'sidebar' || !isOpen) return;
-    const host = hostRoot
-      ? document.querySelector<HTMLElement>(hostRoot)
-      : null;
-    if (host) {
-      host.style.width = `calc(100vw - ${sidebarWidth}px)`;
-    } else {
-      document.body.style.marginRight = `${sidebarWidth}px`;
-    }
-  }, [sidebarWidth, displayMode, isOpen, hostRoot]);
+    reserveSpace(sidebarWidth);
+  }, [sidebarWidth, displayMode, isOpen, reserveSpace]);
 
   return { sidebarWidth, handleMouseDown };
 }
