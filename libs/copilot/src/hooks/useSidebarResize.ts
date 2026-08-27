@@ -175,15 +175,19 @@ export function useSidebarResize({
       body.style.transform = prevBody.transform;
       body.style.perspective = prevBody.perspective;
       body.style.willChange = prevBody.willChange;
-      body.style.marginRight = prevBody.marginRight;
-      body.style.transition = prevBody.transition;
-      // Restore every host node we constrained — the SPA may have swapped it mid-session.
-      hosts.forEach((prev, node) => {
-        node.style.width = prev.width;
-        node.style.overflowX = prev.overflowX;
-        node.style.transition = prev.transition;
-      });
-      hosts.clear();
+      if (hosts.size) {
+        // Restore every host node we constrained — the SPA may have swapped it mid-session.
+        hosts.forEach((prev, node) => {
+          node.style.width = prev.width;
+          node.style.overflowX = prev.overflowX;
+          node.style.transition = prev.transition;
+        });
+        hosts.clear();
+      } else {
+        // We took the body-margin fallback; undo only what we touched.
+        body.style.marginRight = prevBody.marginRight;
+        body.style.transition = prevBody.transition;
+      }
     };
   }, [
     displayMode,
