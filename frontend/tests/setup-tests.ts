@@ -2,6 +2,8 @@ import matchers from '@testing-library/jest-dom/matchers';
 import { cleanup } from '@testing-library/react';
 import { afterEach, expect, vi } from 'vitest';
 
+import { cleanupShadowHosts } from './testUtils';
+
 expect.extend(matchers);
 
 // Mock URL.createObjectURL
@@ -57,4 +59,5 @@ if (typeof globalThis.DOMMatrix === 'undefined') {
 
 afterEach(() => {
   cleanup();
+  cleanupShadowHosts();
 });

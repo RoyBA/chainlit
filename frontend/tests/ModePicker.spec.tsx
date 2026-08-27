@@ -1,9 +1,9 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { ModePicker } from '@/components/chat/MessageComposer/ModePicker';
 
-import { cleanupShadowHosts, mountShadowHost } from './testUtils';
+import { mountShadowHost } from './testUtils';
 
 vi.mock('@chainlit/react-client', async () => {
   const React = await import('react');
@@ -27,8 +27,6 @@ const renderComponent = () =>
   render(<ModePicker mode={mode as any} onOptionSelect={vi.fn()} />);
 
 describe('ModePicker — shadow DOM popover positioning', () => {
-  afterEach(cleanupShadowHosts);
-
   it('portals the popover into the widget shadow root', () => {
     const shadowRoot = mountShadowHost();
 

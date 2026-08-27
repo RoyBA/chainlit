@@ -1,12 +1,12 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { RecoilRoot } from 'recoil';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { commandsState } from '@chainlit/react-client';
 
 import { CommandPopoverButton } from '@/components/chat/MessageComposer/CommandPopoverButton';
 
-import { cleanupShadowHosts, mountShadowHost } from './testUtils';
+import { mountShadowHost } from './testUtils';
 
 vi.mock('components/i18n/Translator', () => ({
   useTranslation: () => ({ t: (key: string) => key })
@@ -35,8 +35,6 @@ const renderComponent = () =>
   );
 
 describe('CommandPopoverButton — shadow DOM popover positioning', () => {
-  afterEach(cleanupShadowHosts);
-
   it('portals the popover into the widget shadow root', () => {
     const shadowRoot = mountShadowHost();
 

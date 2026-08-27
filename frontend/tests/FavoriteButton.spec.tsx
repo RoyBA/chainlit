@@ -10,7 +10,7 @@ import {
 
 import { FavoriteButton } from '@/components/chat/MessageComposer/FavoriteButton';
 
-import { cleanupShadowHosts, mountShadowHost } from './testUtils';
+import { mountShadowHost } from './testUtils';
 
 const toggleMessageFavoriteMock = vi.fn();
 
@@ -324,8 +324,6 @@ describe('FavoriteButton — shadow DOM popover positioning', () => {
       config: { features: { favorites: true } }
     });
   });
-
-  afterEach(cleanupShadowHosts);
 
   it('portals the popover into the widget shadow root', () => {
     const shadowRoot = mountShadowHost();
