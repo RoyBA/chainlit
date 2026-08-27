@@ -45,6 +45,10 @@ export function useSidebarResize({
     >()
   );
 
+  // Whether we wrote the body-margin fallback this session (host absent). Tracked apart
+  // from styledHosts because a session can use both if a configured host disappears.
+  const usedBodyFallback = useRef(false);
+
   // Snapshot a host's original inline styles the first time we touch it, so close can
   // restore it even after a swap.
   const rememberHost = useCallback((host: HTMLElement) => {
@@ -66,6 +70,7 @@ export function useSidebarResize({
         rememberHost(host);
         host.style.width = `calc(100vw - ${width}px)`;
       } else {
+        usedBodyFallback.current = true;
         document.body.style.marginRight = `${width}px`;
       }
     },
@@ -81,6 +86,7 @@ export function useSidebarResize({
         rememberHost(host);
         host.style.transition = enabled ? 'width 0.3s ease-in-out' : '';
       } else {
+        usedBodyFallback.current = true;
         document.body.style.transition = enabled
           ? 'margin-right 0.3s ease-in-out'
           : '';
@@ -145,6 +151,7 @@ export function useSidebarResize({
 
     const body = document.body;
     const host = getHostRoot();
+    usedBodyFallback.current = false;
 
     const prevBody = {
       transform: body.style.transform,
@@ -175,16 +182,16 @@ export function useSidebarResize({
       body.style.transform = prevBody.transform;
       body.style.perspective = prevBody.perspective;
       body.style.willChange = prevBody.willChange;
-      if (hosts.size) {
-        // Restore every host node we constrained — the SPA may have swapped it mid-session.
-        hosts.forEach((prev, node) => {
-          node.style.width = prev.width;
-          node.style.overflowX = prev.overflowX;
-          node.style.transition = prev.transition;
-        });
-        hosts.clear();
-      } else {
-        // We took the body-margin fallback; undo only what we touched.
+      // Restore every host node we constrained — the SPA may have swapped it mid-session.
+      hosts.forEach((prev, node) => {
+        node.style.width = prev.width;
+        node.style.overflowX = prev.overflowX;
+        node.style.transition = prev.transition;
+      });
+      hosts.clear();
+      // Undo the body-margin fallback only if we actually used it (a host may have vanished
+      // mid-session), so we never clobber host-app updates in the pure-host path.
+      if (usedBodyFallback.current) {
         body.style.marginRight = prevBody.marginRight;
         body.style.transition = prevBody.transition;
       }
