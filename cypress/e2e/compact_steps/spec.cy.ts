@@ -81,4 +81,15 @@ describe('Compact CoT display', () => {
       'Nested answer'
     );
   });
+
+  it("renders the last step's icon in the compact summary avatar", () => {
+    cy.visit('/');
+    submitMessage('icon');
+
+    cy.get('[data-testid="compact-steps"]').should('have.length', 1);
+
+    // The summary avatar reflects the last step's icon (an <svg>), so no
+    // fallback avatar <img> is rendered inside the compact summary.
+    cy.get('[data-testid="compact-steps"]').find('img').should('not.exist');
+  });
 });

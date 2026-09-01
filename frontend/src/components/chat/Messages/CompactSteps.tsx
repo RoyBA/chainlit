@@ -87,7 +87,13 @@ const CompactSteps = memo(
       <div className="step py-2" data-testid="compact-steps">
         <div className="flex flex-grow pb-2">
           <div className="ai-message flex gap-4 w-full">
-            <MessageAvatar author={lastStep?.name || 'Assistant'} />
+            <MessageAvatar
+              author={
+                lastStep?.metadata?.avatarName || lastStep?.name || 'Assistant'
+              }
+              isError={lastStep?.isError}
+              iconName={lastStep?.metadata?.icon}
+            />
             <div className="flex flex-col flex-grow w-0">
               <Accordion
                 type="single"

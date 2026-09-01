@@ -16,6 +16,11 @@ async def tool3():
     return "Result from tool3"
 
 
+@cl.step(type="tool", name="tool_icon", icon="search")
+async def tool_icon():
+    return "Result from tool_icon"
+
+
 @cl.step(type="tool", name="agent")
 async def agent():
     # Two tools nested under an intermediate step. Compact mode must count the
@@ -48,6 +53,12 @@ async def main(message: cl.Message):
         # at the root, not be trapped inside the collapsed compact summary.
         await answering_agent()
         return
+    elif content == "icon":
+        # The last visible step carries an icon, so the compact summary avatar
+        # must render that icon instead of a fallback avatar image.
+        await tool1()
+        await tool2()
+        await tool_icon()
     else:
         # Three sequential tools -> collapsed into one compact summary.
         await tool1()
