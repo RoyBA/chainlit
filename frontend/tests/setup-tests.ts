@@ -60,4 +60,6 @@ if (typeof globalThis.DOMMatrix === 'undefined') {
 afterEach(() => {
   cleanup();
   cleanupShadowHosts();
+  // Reset shared mock call history (e.g. the prototype scrollIntoView stub) between tests.
+  vi.clearAllMocks();
 });
