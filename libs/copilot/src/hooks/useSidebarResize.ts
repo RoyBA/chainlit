@@ -49,6 +49,10 @@ export function useSidebarResize({
   // from styledHosts because a session can use both if a configured host disappears.
   const usedBodyFallback = useRef(false);
 
+  // Original body margin/transition captured at open, so the moment a host resolves we can
+  // undo the fallback without clobbering the host app's own values.
+  const prevBodyFallback = useRef({ marginRight: '', transition: '' });
+
   // Snapshot a host's original inline styles the first time we touch it, so close can
   // restore it even after a swap.
   const rememberHost = useCallback((host: HTMLElement) => {
@@ -68,6 +72,14 @@ export function useSidebarResize({
       const host = getHostRoot();
       if (host) {
         rememberHost(host);
+        if (usedBodyFallback.current) {
+          // A host resolved after we'd taken the body fallback; undo the margin so we don't
+          // reserve space twice. The original is kept in prevBodyFallback for close.
+          document.body.style.marginRight =
+            prevBodyFallback.current.marginRight;
+          document.body.style.transition = prevBodyFallback.current.transition;
+          usedBodyFallback.current = false;
+        }
         host.style.width = `calc(100vw - ${width}px)`;
       } else {
         usedBodyFallback.current = true;
@@ -152,6 +164,10 @@ export function useSidebarResize({
     const body = document.body;
     const host = getHostRoot();
     usedBodyFallback.current = false;
+    prevBodyFallback.current = {
+      marginRight: body.style.marginRight,
+      transition: body.style.transition
+    };
 
     const prevBody = {
       transform: body.style.transform,

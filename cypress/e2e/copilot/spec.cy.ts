@@ -218,6 +218,7 @@ describe('Copilot', { includeShadowDom: true }, () => {
       cy.document().then((doc) => {
         const el = doc.createElement('div');
         el.id = 'test-host-root';
+        el.style.width = '512px';
         doc.body.appendChild(el);
       });
 
@@ -240,8 +241,20 @@ describe('Copilot', { includeShadowDom: true }, () => {
           2
         );
       });
+      cy.step('hostRoot path never touches the body margin');
       cy.document().should((doc) => {
-        expect(doc.body.style.marginRight).to.not.equal('400px');
+        expect(doc.body.style.marginRight).to.equal('');
+      });
+
+      cy.step('Close and verify the hostRoot styles are restored');
+      cy.get('#close-sidebar-button').click();
+      cy.get('#chainlit-copilot-chat').should('not.exist');
+      cy.get('#test-host-root').should(($el) => {
+        expect($el[0].style.width).to.equal('512px');
+        expect($el[0].style.overflowX).to.equal('');
+      });
+      cy.document().should((doc) => {
+        expect(doc.body.style.marginRight).to.equal('');
       });
     });
 
