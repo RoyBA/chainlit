@@ -84,8 +84,10 @@ class MessageBase(ABC):
         # A deserialized payload is authoritative about its command: reset it from
         # the payload so messages rebuilt here (incoming client messages, thread
         # resume) never inherit an active audio turn's command that
-        # __post_init__ applies to command-less user messages.
-        message.command = _dict.get("command")
+        # __post_init__ applies to command-less user messages. Normalize like
+        # __init__ so a non-string payload command can't bypass the str contract.
+        command = _dict.get("command")
+        message.command = str(command) if command else None
         return message
 
     def to_dict(self) -> StepDict:

@@ -637,6 +637,7 @@ class TestAudioStartCommand:
     async def _run(self, *, accepted, enabled=True, payload=None):
         session = Mock()
         session.current_command = "stale"
+        session.audio_turn = 0
         config = Mock()
         config.features.audio.enabled = enabled
         config.code.on_audio_start = AsyncMock(return_value=accepted)
@@ -668,4 +669,15 @@ class TestAudioStartCommand:
         session = await self._run(
             accepted=True, enabled=False, payload={"command": "search"}
         )
+        assert session.current_command is None
+
+    @pytest.mark.asyncio
+    async def test_accepted_start_without_payload_clears_command(self):
+        # An older frontend may send audio_start with no payload at all.
+        session = await self._run(accepted=True, payload=None)
+        assert session.current_command is None
+
+    @pytest.mark.asyncio
+    async def test_accepted_start_empty_payload_clears_command(self):
+        session = await self._run(accepted=True, payload={})
         assert session.current_command is None

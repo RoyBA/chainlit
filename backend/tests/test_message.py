@@ -830,3 +830,18 @@ class TestUserMessageCommandAutoAttach:
         with mock_chainlit_context(session=session):
             msg = MessageBase.from_dict(step_dict)
             assert msg.command == "picture"
+
+    def test_from_dict_normalizes_non_string_command(self):
+        """A non-string payload command is coerced to str, matching __init__."""
+        session = self._session_with_command(None)
+        step_dict = {
+            "id": "00000000-0000-4000-8000-000000000000",
+            "createdAt": "2024-01-01T00:00:00Z",
+            "output": "command sent as a non-string",
+            "name": "User",
+            "type": "user_message",
+            "command": {"unexpected": "object"},
+        }
+        with mock_chainlit_context(session=session):
+            msg = MessageBase.from_dict(step_dict)
+            assert msg.command == str({"unexpected": "object"})
