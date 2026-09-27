@@ -100,8 +100,8 @@
       "status": {
         "using": "يستخدم",
         "used": "مستخدم",
-        "usedSteps": "استُخدمت {{count}} خطوات",
-        "usedTools": "استُخدمت {{count}} أدوات"
+        "usedSteps": "الخطوات المستخدمة: {{count}}",
+        "usedTools": "الأدوات المستخدمة: {{count}}"
       },
       "actions": {
         "copy": {

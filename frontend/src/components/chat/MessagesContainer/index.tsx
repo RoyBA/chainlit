@@ -172,6 +172,7 @@ const MessagesContainer = ({ navigate }: Props) => {
       onFeedbackDeleted
     };
   }, [
+    uploadFile,
     askUser,
     enableFeedback,
     loading,
@@ -180,10 +181,13 @@ const MessagesContainer = ({ navigate }: Props) => {
     config?.ui?.cot_display,
     config?.ui?.show_step_details,
     config?.features?.unsafe_allow_html,
+    config?.features?.latex,
     config?.features?.user_message_markdown,
+    config?.features?.edit_message,
     onElementRefClick,
     onError,
-    onFeedbackUpdated
+    onFeedbackUpdated,
+    onFeedbackDeleted
   ]);
 
   return (

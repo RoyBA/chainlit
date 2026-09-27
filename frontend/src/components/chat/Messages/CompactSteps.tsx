@@ -57,9 +57,10 @@ const CompactSteps = memo(
       return collectVisible(steps, cot);
     }, [steps, cot]);
 
-    // Show "Using" until an assistant_message appears (meaning tools are done
-    // and the model is streaming). This avoids flashing between sequential tools
-    // (no assistant_message yet) while still switching once the answer begins.
+    // Show "Using" until an assistant_message appears (tools done, model
+    // streaming), which avoids flashing between sequential tools. But if a
+    // leaf step is still executing keep "Using" too, so an agent that emits an
+    // intermediate message then keeps working doesn't wrongly read "Used".
     const hasAnswer = useMemo(() => {
       const check = (items: IStep[]): boolean =>
         items.some(
@@ -69,7 +70,17 @@ const CompactSteps = memo(
       return check(steps);
     }, [steps]);
 
-    const showUsing = !!isRunning && !hasAnswer;
+    const hasActiveStep = useMemo(() => {
+      const check = (items: IStep[]): boolean =>
+        items.some((s) =>
+          s.steps?.length
+            ? check(s.steps)
+            : !s.type.includes('message') && !!s.start && !s.end && !s.isError
+        );
+      return check(steps);
+    }, [steps]);
+
+    const showUsing = !!isRunning && (!hasAnswer || hasActiveStep);
 
     // Get the last visible step name for the "Using X" label
     const lastStep = visibleSteps[visibleSteps.length - 1];
